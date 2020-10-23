@@ -14,7 +14,7 @@ data "aws_ami" "avx_copilot" {
     name   = "virtualization-type"
     values = ["hvm"]
   }
-  owners = ["472991774533"] # Canonical
+  owners = ["472991774533"]
 }
 
 resource "aws_security_group" "sg" {
