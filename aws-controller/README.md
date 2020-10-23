@@ -1,6 +1,6 @@
 ### Description
 
-This will deploy Aviatrix CoPilot in AWS
+This will deploy Aviatrix Controller in AWS
 
 ### Variables
 The following variables are required:
