@@ -54,7 +54,7 @@ resource "azurerm_network_interface_security_group_association" "ctrl_nsg" {
 }
 
 resource "azurerm_virtual_machine" "avxctrl" {
-  name                  = "AviatrixController"
+  name                  = var.instance_name
   location              = var.location
   resource_group_name   = var.rg_name
   network_interface_ids = ["${azurerm_network_interface.main.id}"]
