@@ -14,7 +14,7 @@ data "aws_ami" "avx_ctrl" {
     name   = "virtualization-type"
     values = ["hvm"]
   }
-  owners = ["679593333241"] # Canonical
+  owners = ["679593333241"]
 }
 
 resource "aws_security_group" "sg" {
