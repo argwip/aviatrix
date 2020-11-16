@@ -47,7 +47,6 @@ resource "aws_instance" "ctrl" {
   ami                         = "ami-0ef23847d2716838e"
   instance_type               = var.instance_size
   subnet_id                   = var.subnet_id
-  associate_public_ip_address = true
   security_groups             = [aws_security_group.sg.id]
   lifecycle {
     ignore_changes = [security_groups]
