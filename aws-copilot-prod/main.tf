@@ -34,7 +34,16 @@ resource "aws_security_group" "sg" {
   }
 }
 
-resource "aws_instance" "instance" {
+resource "aws_eip" "ctrl" {
+  vpc = true
+}
+
+resource "aws_eip_association" "ctrl" {
+  instance_id   = aws_instance.ctrl.id
+  allocation_id = aws_eip.ctrl.id
+}
+
+resource "aws_instance" "ctrl" {
   ami                         = "ami-0ef23847d2716838e"
   instance_type               = var.instance_size
   subnet_id                   = var.subnet_id
