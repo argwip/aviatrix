@@ -1,130 +1,40 @@
+data "aws_route53_zone" "main" {
+  name         = "pod${var.pod_id}.${var.dns_zone}"
+  private_zone = false
+}
+
 data "azurerm_subnet" "client" {
-  name                 = module.azure_spoke_1.vnet.subnets[0].name
-  virtual_network_name = module.azure_spoke_1.vnet.name
-  resource_group_name  = split(":", module.azure_spoke_1.vnet.vpc_id)[1]
+  name                 = module.client_vnet.vnet.subnets[0].name
+  virtual_network_name = module.client_vnet.vnet.name
+  resource_group_name  = split(":", module.client_vnet.vnet.vpc_id)[1]
+}
+data "azurerm_subnet" "app" {
+  name                 = module.app_vnet.vnet.subnets[0].name
+  virtual_network_name = module.app_vnet.vnet.name
+  resource_group_name  = split(":", module.app_vnet.vnet.vpc_id)[1]
 }
 
-resource "azurerm_network_interface" "client" {
-  name                = "client-pod${var.pod_id}"
-  location            = var.azure_region
-  resource_group_name = split(":", module.azure_spoke_1.vnet.vpc_id)[1]
+module "azure_client" {
+  source = "git::https://github.com/fkhademi/terraform-azure-instance-build-module.git"
 
-  ip_configuration {
-    name                          = "client-pod${var.pod_id}"
-    subnet_id                     = data.azurerm_subnet.client.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.client.id
-  }
-}
-
-resource "azurerm_public_ip" "client" {
-  name                    = "client-pod${var.pod_id}"
-  location                = var.azure_region
-  resource_group_name     = split(":", module.azure_spoke_1.vnet.vpc_id)[1]
-  allocation_method       = "Static"
-  idle_timeout_in_minutes = 30
-}
-
-resource "azurerm_network_security_group" "client" {
-  name                = "client-pod${var.pod_id}"
-  location            = var.azure_region
-  resource_group_name = split(":", module.azure_spoke_1.vnet.vpc_id)[1]
-
-  security_rule {
-    name                       = "HTTPS"
-    priority                   = 1000
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "TCP"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-  security_rule {
-    name                       = "SSH"
-    priority                   = 1001
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "TCP"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-  security_rule {
-    name                       = "RDP"
-    priority                   = 1002
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "TCP"
-    source_port_range          = "*"
-    destination_port_range     = "3389"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-  security_rule {
-    name                       = "HTTP"
-    priority                   = 1003
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "TCP"
-    source_port_range          = "*"
-    destination_port_range     = "80"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-}
-resource "azurerm_network_interface_security_group_association" "client" {
-  network_interface_id      = azurerm_network_interface.client.id
-  network_security_group_id = azurerm_network_security_group.client.id
-}
-
-resource "azurerm_virtual_machine" "client" {
-  name                  = "client-pod${var.pod_id}"
-  location              = var.azure_region
-  resource_group_name   = split(":", module.azure_spoke_1.vnet.vpc_id)[1]
-  network_interface_ids = ["${azurerm_network_interface.client.id}"]
-  vm_size               = "Standard_B2ms"
-
-  delete_os_disk_on_termination    = true
-  delete_data_disks_on_termination = true
-
-  storage_image_reference {
-    publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
-    version   = "latest"
-  }
-
-  storage_os_disk {
-    name              = "client-pod${var.pod_id}"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Standard_LRS"
-  }
-
-  os_profile {
-    computer_name  = "client-pod${var.pod_id}"
-    admin_username = "ubuntu"
-    custom_data    = data.template_cloudinit_config.config.rendered
-  }
-  os_profile_linux_config {
-    disable_password_authentication = true
-    ssh_keys {
-      path     = "/home/ubuntu/.ssh/authorized_keys"
-      key_data = var.ssh_key
-    }
-  }
+  name            = "client-pod${var.pod_id}"
+  region          = var.azure_region
+  rg              = split(":", module.client_vnet.vnet.vpc_id)[1]
+  vnet            = module.client_vnet.vnet.name
+  subnet          = data.azurerm_subnet.client.id
+  ssh_key         = var.ssh_key
+  cloud_init_data = data.template_cloudinit_config.config.rendered
+  public_ip       = true
 }
 
 data "template_file" "cloudconfig" {
-  template = file("${path.module}/cloud-init.tpl")
+  template = file("${path.module}/cloud-init/cloud-init-client.tpl")
   vars = {
-    username = "${var.username}"
-    password = "${var.password}"
-    hostname = "client.pod${var.pod_id}.${var.dns_zone}"
-    pod_id   = "pod${var.pod_id}"
+    username   = "pod${var.pod_id}"
+    password   = "${var.password}"
+    hostname   = "client.pod${var.pod_id}.${var.dns_zone}"
+    domainname = var.dns_zone
+    pod_id     = "pod${var.pod_id}"
   }
 }
 
@@ -138,15 +48,159 @@ data "template_cloudinit_config" "config" {
   }
 }
 
-data "aws_route53_zone" "main" {
-  name         = "pod${var.pod_id}.${var.dns_zone}"
-  private_zone = false
-}
-
 resource "aws_route53_record" "client" {
   zone_id = data.aws_route53_zone.main.zone_id
   name    = "client.${data.aws_route53_zone.main.name}"
   type    = "A"
   ttl     = "1"
-  records = [azurerm_public_ip.client.ip_address]
+  records = [module.azure_client.public_ip.ip_address]
+}
+
+module "web" {
+  source = "git::https://github.com/fkhademi/terraform-azure-instance-build-module.git"
+
+  name            = "web-pod${var.pod_id}"
+  region          = var.azure_region
+  rg              = split(":", module.client_vnet.vnet.vpc_id)[1]
+  vnet            = module.client_vnet.vnet.name
+  subnet          = data.azurerm_subnet.client.id
+  ssh_key         = var.ssh_key
+  cloud_init_data = data.template_cloudinit_config.webapp.rendered
+  public_ip       = false
+}
+data "template_file" "webapp" {
+  template = file("${path.module}/cloud-init/cloud-init-webapp.tpl")
+  vars = {
+    domainname = var.dns_zone
+    hostname   = "client.pod${var.pod_id}.${var.dns_zone}"
+    pod_id     = "pod${var.pod_id}"
+    type       = "web"
+  }
+}
+data "template_cloudinit_config" "webapp" {
+  gzip          = true
+  base64_encode = true
+
+  part {
+    content_type = "text/cloud-config"
+    content      = "${data.template_file.webapp.rendered}"
+  }
+}
+resource "aws_route53_record" "web" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "web.${data.aws_route53_zone.main.name}"
+  type    = "A"
+  ttl     = "1"
+  records = [module.web.nic.private_ip_address]
+}
+module "app" {
+  source = "git::https://github.com/fkhademi/terraform-azure-instance-build-module.git"
+
+  name            = "app-pod${var.pod_id}"
+  region          = var.azure_region
+  rg              = split(":", module.app_vnet.vnet.vpc_id)[1]
+  vnet            = module.app_vnet.vnet.name
+  subnet          = data.azurerm_subnet.app.id
+  ssh_key         = var.ssh_key
+  cloud_init_data = data.template_cloudinit_config.app.rendered
+  public_ip       = false
+}
+data "template_file" "app" {
+  template = file("${path.module}/cloud-init/cloud-init-webapp.tpl")
+  vars = {
+    domainname = var.dns_zone
+    hostname   = "client.pod${var.pod_id}.${var.dns_zone}"
+    pod_id     = "pod${var.pod_id}"
+    type       = "app"
+  }
+}
+data "template_cloudinit_config" "app" {
+  gzip          = true
+  base64_encode = true
+
+  part {
+    content_type = "text/cloud-config"
+    content      = "${data.template_file.app.rendered}"
+  }
+}
+resource "aws_route53_record" "app" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "app.${data.aws_route53_zone.main.name}"
+  type    = "A"
+  ttl     = "1"
+  records = [module.app.nic.private_ip_address]
+}
+# AWS Client
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
+  }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+  owners = ["099720109477"] # Canonical
+}
+data "template_file" "db" {
+  template = file("${path.module}/cloud-init/user-data-db.tpl")
+
+  vars = {
+    pod_id = var.pod_id
+  }
+}
+resource "aws_security_group" "db" {
+  name   = "db-sg"
+  vpc_id = module.spoke_aws_1.vpc.vpc_id
+
+  ingress {
+    from_port   = 0
+    to_port     = 22
+    protocol    = "6"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 0
+    to_port     = 3306
+    protocol    = "6"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+resource "aws_key_pair" "key" {
+  key_name   = "${var.pod_id}-db"
+  public_key = var.ssh_key
+}
+resource "aws_instance" "db" {
+  ami             = data.aws_ami.ubuntu.id
+  instance_type   = "t2.medium"
+  key_name        = aws_key_pair.key.key_name
+  subnet_id       = module.spoke_aws_1.vpc.subnets[0].subnet_id
+  security_groups = [aws_security_group.db.id]
+  user_data       = data.template_file.db.rendered
+  tags = {
+    Name = "db-pod${var.pod_id}-srv"
+  }
+  depends_on = [
+    aviatrix_fqdn.egress, module.spoke_aws_1
+  ]
+}
+resource "aws_route53_record" "db" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "db.${data.aws_route53_zone.main.name}"
+  type    = "A"
+  ttl     = "1"
+  records = [aws_instance.db.private_ip]
 }

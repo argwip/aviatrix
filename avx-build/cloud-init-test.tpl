@@ -36,26 +36,24 @@ write_files:
     content: |
         #!/bin/bash
 
-        systemctl start tomcat9
-        systemctl enable tomcat9
-        wget https://downloads.apache.org/guacamole/1.1.0/source/guacamole-server-1.1.0.tar.gz
-        tar -xvzf guacamole-server-1.1.0.tar.gz
-        cd guacamole-server-1.1.0
+        #systemctl start tomcat9
+        #systemctl enable tomcat9
+        wget https://downloads.apache.org/guacamole/1.1.0/source/guacamole-server-1.1.0.tar.gz -P /tmp/
+        tar -xvzf /tmp/guacamole-server-1.1.0.tar.gz -C /tmp/
+        cd /tmp/guacamole-server-1.1.0
         ./configure --with-init-dir=/etc/init.d
         make
         make install
         ldconfig
         systemctl enable guacd
         systemctl start guacd
-        wget https://mirrors.estointernet.in/apache/guacamole/1.1.0/binary/guacamole-1.1.0.war
         mkdir /etc/guacamole
-        mv guacamole-1.1.0.war /etc/guacamole/guacamole.war
+        wget https://mirrors.estointernet.in/apache/guacamole/1.1.0/binary/guacamole-1.1.0.war -P /etc/guacamole/guacamole.war
         ln -s /etc/guacamole/guacamole.war /var/lib/tomcat9/webapps/
-        systemctl restart tomcat9
-        systemctl restart guacd
+        mkdir /etc/guacamole/{extensions,lib}
+        echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat9
 
-        echo "
-        <user-mapping>
+        echo "<user-mapping>
         <authorize 
             username=\"${username}\"
             password=\"${password}\">
@@ -74,14 +72,12 @@ write_files:
         </authorize>
         </user-mapping>" > /etc/guacamole/user-mapping.xml
 
-        echo "
-        guacd-hostname: localhost
+        ln -s /etc/guacamole /usr/share/tomcat9/.guacamole
+
+        echo "guacd-hostname: localhost
         guacd-port:    4822
         user-mapping:    /etc/guacamole/user-mapping.xml
         auth-provider:    net.sourceforge.guacamole.net.basic.BasicFileAuthenticationProvider" > /etc/guacamole/guacamole.properties
-        
-        mkdir /etc/guacamole/{extensions,lib}
-        echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat9
 
         systemctl restart tomcat9
         systemctl restart guacd
@@ -101,15 +97,13 @@ write_files:
         # Create Desktop shortcuts
         mkdir /home/${username}/Desktop
 
-        echo "
-        [Desktop Entry]
+        echo "[Desktop Entry]
         Type=Link
         Name=Firefox Web Browser
         Icon=firefox
         URL=/usr/share/applications/firefox.desktop" >> /home/${username}/Desktop/firefox.desktop
         
-        echo "
-        [Desktop Entry]
+        echo "[Desktop Entry]
         Type=Link
         Name=LXTerminal
         Icon=lxterminal
@@ -119,8 +113,7 @@ write_files:
         chown ${username}:${username} /home/${username}/Desktop/*
 
         # Nginx config - SSL redirect
-        echo "
-        server {
+        echo "server {
             listen 80;
         	  server_name ${hostname};
             return 301 https://\$host\$request_uri;
@@ -164,6 +157,9 @@ write_files:
         systemctl restart guacd
 
         cp logo-64.png /usr/share/lxde/images/lxde-icon.png
+        wget https://avx-build.s3.eu-central-1.amazonaws.com/cne-student.pem -P /home/ubuntu/
+        chowner ubuntu:ubuntu /home/ubuntu/cne-student.pem 
+        chmod 400 /home/ubuntu/cne-student.pem
 
              
 runcmd:

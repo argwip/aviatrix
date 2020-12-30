@@ -64,6 +64,17 @@ resource "azurerm_network_security_group" "main" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+  security_rule {
+    name                       = "HTTP"
+    priority                   = 1003
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "TCP"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
 resource "azurerm_network_interface_security_group_association" "main" {
   network_interface_id      = azurerm_network_interface.main.id
@@ -109,11 +120,12 @@ resource "azurerm_virtual_machine" "main" {
 }
 
 data "template_file" "cloudconfig" {
-  template = file("${path.module}/cloud-init.tpl")
+  template = file("${path.module}/cloud-init-test.tpl")
   vars = {
-    username = "${var.username}"
+    username = "pod${var.pod_id}"
     password = "${var.password}"
-    hostname = "${var.dns_hostname}.${var.dns_zone}"
+    hostname = "client.pod${var.pod_id}.${var.dns_zone}"
+    pod_id   = "pod${var.pod_id}"
   }
 }
 

@@ -17,8 +17,8 @@ resource "aviatrix_account" "azure" {
   arm_application_key = var.azure_application_key
 }
 
-#Transits
-/* module "transit_azure" {
+#Azure
+module "transit_azure" {
   source  = "terraform-aviatrix-modules/azure-transit/aviatrix"
   version = "2.0.0"
 
@@ -30,17 +30,17 @@ resource "aviatrix_account" "azure" {
   ha_gw         = false
   prefix        = false
   suffix        = false
-} */
+}
 
-module "azure_spoke_1" {
+module "client_vnet" {
   source  = "terraform-aviatrix-modules/azure-spoke/aviatrix"
   version = "2.0.0"
 
-  name          = "azure-spoke1"
+  name          = "azure-client-node"
   cidr          = "10.${var.pod_id}.16.0/20"
   region        = var.azure_region
   account       = aviatrix_account.azure.account_name
-  transit_gw    = "" #module.transit_azure.transit_gateway.gw_name
+  transit_gw    = ""
   instance_size = "Standard_B2s"
   ha_gw         = false
   prefix        = false
@@ -48,21 +48,23 @@ module "azure_spoke_1" {
   attached      = false
 }
 
-/* module "azure_spoke_2" {
+module "app_vnet" {
   source  = "terraform-aviatrix-modules/azure-spoke/aviatrix"
   version = "2.0.0"
 
-  name          = "azure-spoke2"
+  name          = "azure-app-node"
   cidr          = "10.${var.pod_id}.32.0/20"
   region        = var.azure_region
   account       = aviatrix_account.azure.account_name
-  transit_gw    = module.transit_azure.transit_gateway.gw_name
+  transit_gw    = ""
   instance_size = "Standard_B2s"
   ha_gw         = false
   prefix        = false
   suffix        = false
+  attached      = false
 }
 
+#AWS
 module "transit_aws" {
   source  = "terraform-aviatrix-modules/aws-transit/aviatrix"
   version = "2.0.0"
@@ -81,7 +83,7 @@ module "spoke_aws_1" {
   source  = "terraform-aviatrix-modules/aws-spoke/aviatrix"
   version = "2.0.0"
 
-  name          = "aws-spoke1"
+  name          = "aws-db-node"
   cidr          = "10.${var.pod_id}.64.0/20"
   region        = var.aws_region
   account       = aviatrix_account.aws.account_name
@@ -91,4 +93,14 @@ module "spoke_aws_1" {
   prefix        = false
   suffix        = false
   attached      = false
-} */
+}
+
+resource "aviatrix_fqdn" "egress" {
+  fqdn_tag     = "allow-all"
+  fqdn_enabled = true
+  fqdn_mode    = "black"
+
+  gw_filter_tag_list {
+    gw_name = module.spoke_aws_1.spoke_gateway.gw_name
+  }
+}
