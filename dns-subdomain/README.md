@@ -4,10 +4,10 @@
 
 This will create the following:
 
-- A DNS subdomain in Route53
-- The necessary glue and authority records in the parent domain
-- A wildcard cert signed by LetsEncrypt for this subdomain
-- The cert and key will be stored in an S3 bucket
+* A DNS subdomain in Route53
+* The necessary glue and authority records in the parent domain
+* A wildcard cert signed by LetsEncrypt for this subdomain
+* The cert and key will be stored in an S3 bucket
 
 variable "dns_aws_access_key" { }
 variable "dns_aws_secret_key" { }
