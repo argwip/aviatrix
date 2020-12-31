@@ -38,6 +38,8 @@ write_files:
 
         systemctl start tomcat9
         systemctl enable tomcat9
+
+        # Download and install Guacamole Server
         wget https://downloads.apache.org/guacamole/1.1.0/source/guacamole-server-1.1.0.tar.gz -P /tmp/
         tar xzf /tmp/guacamole-server-1.1.0.tar.gz -C /tmp/
         cd /tmp/guacamole-server-1.1.0
