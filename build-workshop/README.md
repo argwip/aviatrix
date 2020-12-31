@@ -11,7 +11,7 @@ This will create a lab environment for a Build Workshop.  The following will be 
 
 ### Diagram
 
-
+![diagram](img/diagram.jpeg)
 
 ### Variables
 The following variables are required:
