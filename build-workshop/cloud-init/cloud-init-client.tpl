@@ -86,7 +86,8 @@ write_files:
         </user-mapping>" > /etc/guacamole/user-mapping.xml
 
         wget https://downloads.apache.org/guacamole/1.1.0/binary/guacamole-1.1.0.war -O /etc/guacamole/guacamole.war
-        ln -s /etc/guacamole/guacamole.war /var/lib/tomcat9/webapps/
+        #ln -s /etc/guacamole/guacamole.war /var/lib/tomcat9/webapps/
+        wget https://downloads.apache.org/guacamole/1.1.0/binary/guacamole-1.1.0.war -O /var/lib/tomcat9/webapps/
         mkdir /etc/guacamole/{extensions,lib}
         echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat9
 
