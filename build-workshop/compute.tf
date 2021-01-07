@@ -75,6 +75,9 @@ data "template_file" "webapp" {
     hostname   = "client.pod${var.pod_id}.${var.dns_zone}"
     pod_id     = "pod${var.pod_id}"
     type       = "web"
+    accesskey  = "na"
+    secretkey  = "na"
+    db_ip      = aws_instance.db.private_ip
   }
 }
 data "template_cloudinit_config" "webapp" {
@@ -112,6 +115,9 @@ data "template_file" "app" {
     hostname   = "client.pod${var.pod_id}.${var.dns_zone}"
     pod_id     = "pod${var.pod_id}"
     type       = "app"
+    accesskey  = var.dns_aws_access_key
+    secretkey  = var.dns_aws_secret_key
+    db_ip      = aws_instance.db.private_ip
   }
 }
 data "template_cloudinit_config" "app" {

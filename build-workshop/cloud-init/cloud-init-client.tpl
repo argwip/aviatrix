@@ -86,8 +86,8 @@ write_files:
         </user-mapping>" > /etc/guacamole/user-mapping.xml
 
         wget https://downloads.apache.org/guacamole/1.1.0/binary/guacamole-1.1.0.war -O /etc/guacamole/guacamole.war
-        #ln -s /etc/guacamole/guacamole.war /var/lib/tomcat9/webapps/
-        wget https://downloads.apache.org/guacamole/1.1.0/binary/guacamole-1.1.0.war -O /var/lib/tomcat9/webapps/
+        #ln -s /etc/guacamole/guacamole.war /var/lib/tomcat9/webapps/guacamole.war
+        wget https://downloads.apache.org/guacamole/1.1.0/binary/guacamole-1.1.0.war -O /var/lib/tomcat9/webapps/guacamole.war
         mkdir /etc/guacamole/{extensions,lib}
         echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat9
 
@@ -179,6 +179,12 @@ write_files:
         wget https://avx-build.s3.eu-central-1.amazonaws.com/cne-student.pem -P /home/ubuntu/
         chmod 400 /home/ubuntu/cne-student.pem
         chown ubuntu:ubuntu /home/ubuntu/cne-student.pem
+
+        # Add pod ID search domain
+        sed -i '$d' /etc/netplan/50-cloud-init.yaml
+        echo "            nameservers:" >> /etc/netplan/50-cloud-init.yaml
+        echo "               search: [${pod_id}.${domainname}]" >> /etc/netplan/50-cloud-init.yaml
+        netplan apply
 
              
 runcmd:

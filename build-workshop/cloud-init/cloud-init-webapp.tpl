@@ -28,14 +28,35 @@ write_files:
 
         echo "[avx-config]
 
-        WebServerName = web.${pod_id}.avxlab.de
+        WebServerName = web.${pod_id}.${domainname}
         #Enter the name of the app server or load balancer (DNS or IP address; DNS preferred)
-        AppServerName = app.${pod_id}.avxlab.de
+        AppServerName = app.${pod_id}.${domainname}
         #Enter the name of the MySQL server (DNS or IP address; DNS preferred)
-        DBServerName = db.${pod_id}.avxlab.de
+        DBServerName = db.${pod_id}.${domainname}
         MyFQDN = ${type}.${pod_id}.${domainname}" > /etc/avx/avx.conf
 
         service apache2 restart
+        
+        # Add pod ID search domain
+        sed -i '$d' /etc/netplan/50-cloud-init.yaml
+        echo "            nameservers:" >> /etc/netplan/50-cloud-init.yaml
+        echo "               search: [${pod_id}.${domainname}]" >> /etc/netplan/50-cloud-init.yaml
+        netplan apply
+
+        # dynamodb stuff
+        mkdir /root/.aws/
+        mkdir /var/www/.aws/
+        echo "[default]
+        aws_access_key_id=${accesskey}
+        aws_secret_access_key=${secretkey}" >> /root/.aws/credentials
+        cp /root/.aws/credentials /var/www/.aws/
+
+        echo "${db_ip} dynamodb.eu-central-1.amazonaws.com" >> /etc/hosts
+        pip install boto3
+        pip install urllib3
+        pip install requests
+        pip install pythonping
+
              
 runcmd:
   - bash /root/test.sh
