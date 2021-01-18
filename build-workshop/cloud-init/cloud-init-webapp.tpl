@@ -33,7 +33,10 @@ write_files:
         AppServerName = app.${pod_id}.${domainname}
         #Enter the name of the MySQL server (DNS or IP address; DNS preferred)
         DBServerName = db.${pod_id}.${domainname}
-        MyFQDN = ${type}.${pod_id}.${domainname}" > /etc/avx/avx.conf
+        MyFQDN = ${type}.${pod_id}.${domainname}
+        
+        [pod-id]
+        PodID = ${pod_id}" > /etc/avx/avx.conf
 
         service apache2 restart
         

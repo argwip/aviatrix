@@ -96,7 +96,7 @@ write_files:
         user-mapping:    /etc/guacamole/user-mapping.xml
         auth-provider:    net.sourceforge.guacamole.net.basic.BasicFileAuthenticationProvider" > /etc/guacamole/guacamole.properties
 
-        ln -s /etc/guacamole /usr/share/tomcat9/.guacamole
+        ln -s /etc/guacamole  
 
         systemctl restart tomcat9
         systemctl restart guacd
@@ -105,10 +105,10 @@ write_files:
         chpasswd << 'END'
         ${username}:${password}
         END
-        wget https://avx-build.s3.eu-central-1.amazonaws.com/${pod_id}-cert.crt
-        wget https://avx-build.s3.eu-central-1.amazonaws.com/${pod_id}-cert.key
-        cp ${pod_id}-cert.crt /etc/nginx/cert.crt
-        cp ${pod_id}-cert.key /etc/nginx/cert.key
+        wget https://avx-build.s3.eu-central-1.amazonaws.com/san-cert.crt
+        wget https://avx-build.s3.eu-central-1.amazonaws.com/san-cert.key
+        cp san-cert.crt /etc/nginx/cert.crt
+        cp san-cert.key /etc/nginx/cert.key
         #openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/C=DE/ST=BW/L=Schwetzingen/O=Aviatrix/CN=lab.avxlab.de" -keyout /etc/nginx/cert.key -out /etc/nginx/cert.crt
         systemctl start nginx
         systemctl enable nginx
