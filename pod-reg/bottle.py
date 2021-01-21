@@ -152,8 +152,8 @@ def server_static(filepath):
 @post('/doform')
 def process():
     # Get the form vars
-    max_num_pods = 8
-    domain = "avxlab.de"
+    max_num_pods = 46
+    domain = "avxlab.cc"
     name = request.forms.get('name')
     email = request.forms.get('email')
     company = request.forms.get('company')
@@ -208,6 +208,17 @@ def process():
                     <h5 class="card-title">Aviatrix Co-Pilot</h5>
                     <p class="card-text">u: admin</p>
                     <a target="_blank" rel="noopener noreferrer" href="https://cplt.pod%s.%s" class="btn btn-primary">Open Co-Pilot</a>
+                </div>
+                </div>
+            </div>
+            </div>
+            <div class="row">
+            <div class="col-sm-12">
+                <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Lab Guide</h5>
+                    <p class="card-text">Download the lab guide here</p>
+                    <a target="_blank" rel="noopener noreferrer" href="https://avx-build.s3.eu-central-1.amazonaws.com/Aviatrix-Build-Lab-Guide-1.0.pdf" class="btn btn-primary">Open Lab Guide</a>
                 </div>
                 </div>
             </div>
